@@ -93,7 +93,7 @@
 | 느슨한 결합 (Loose Coupling) | 모듈 간 의존성 최소화 | 모듈 간 통신은 인터페이스/타입을 통해 수행. 외부 서비스(LLM API, 벡터 DB)는 어댑터 패턴으로 격리 |
 | 높은 응집도 (High Cohesion) | 관련 기능을 하나의 모듈로 그룹화 | query, rag, auth, history, comparison 등 도메인별 모듈로 그룹화 |
 | DRY (Don't Repeat Yourself) | 코드 및 로직 중복 방지 | 공통 유틸리티, 타입 정의, 에러 처리를 shared 모듈로 추출 |
-| 외부 서비스 격리 | 외부 API 의존성을 어댑터로 감싸기 | LLM API, 벡터 DB 등 외부 서비스는 인터페이스 뒤에 구현을 숨겨 교체 용이성 확보 |
+| 외부 서비스 격리 | 외부 API 의존성을 어댑터로 감싸기 | LLM API, 벡터 DB, Context7 API 등 외부 서비스는 인터페이스 뒤에 구현을 숨겨 교체 용이성 확보 |
 | MVP 우선 설계 | 과도한 추상화보다 동작하는 코드 우선 | 초기에는 실용적 설계를 우선하되, 모듈 경계만 명확히 유지 |
 
 ### 2.3 시스템 컨텍스트 다이어그램
@@ -112,6 +112,7 @@ flowchart TB
         VECTOR_DB["벡터 DB<br/>(Pinecone / Qdrant)"]
         GITHUB_OAUTH["GitHub<br/>OAuth Provider"]
         ANALYTICS["분석 서비스<br/>(PostHog / Mixpanel)"]
+        CTX7_EXT["Context7 API<br/>(Upstash)"]
     end
 
     SYS["API Intelligence Engine<br/>시스템"]
@@ -122,6 +123,7 @@ flowchart TB
     SYS -->|"벡터 유사도 검색<br/>임베딩 저장/조회"| VECTOR_DB
     SYS -->|"OAuth 2.0 인증"| GITHUB_OAUTH
     SYS -->|"이벤트 트래킹"| ANALYTICS
+    SYS -->|"API 공식 문서 수집<br/>(주력 채널)"| CTX7_EXT
 
     style SYS fill:#4A90D9,color:#fff,stroke:#2C5F8A
 ```
@@ -154,6 +156,7 @@ flowchart TB
     subgraph 외부 서비스
         LLM["LLM API<br/>(OpenAI / Anthropic)"]
         GITHUB["GitHub OAuth"]
+        CTX7_SVC["Context7 API<br/>(Upstash)"]
     end
 
     WEB -->|"HTTPS"| NEXT
@@ -162,6 +165,7 @@ flowchart TB
     API -->|"SQL (Prisma ORM)"| PG
     API -->|"벡터 검색 / Upsert"| PINECONE
     API -->|"조건 추출 · 결과 생성"| LLM
+    API -->|"API 문서 수집 (주력)"| CTX7_SVC
 
     style NEXT fill:#4A90D9,color:#fff
     style API fill:#4A90D9,color:#fff
@@ -200,6 +204,7 @@ flowchart TB
             REPO_PG["PostgresRepository<br/>사용자/이력 데이터 접근"]
             CLIENT_LLM["LlmClient<br/>OpenAI/Anthropic 어댑터"]
             CLIENT_VDB["VectorDbClient<br/>Pinecone/Qdrant 어댑터"]
+            CTX7["Context7Client<br/>Upstash Context7 API 어댑터<br/>(문서 수집 주력 채널)"]
         end
     end
 
@@ -218,6 +223,7 @@ flowchart TB
     SVC_EXTRACT --> CLIENT_LLM
     SVC_RAG --> CLIENT_VDB
     SVC_RAG --> CLIENT_LLM
+    UC_INDEX --> CTX7
     UC_INDEX --> CLIENT_VDB
     UC_INDEX --> CLIENT_LLM
 
@@ -227,6 +233,7 @@ flowchart TB
     style SVC_RAG fill:#5BA85B,color:#fff
     style CLIENT_LLM fill:#8B5CF6,color:#fff
     style CLIENT_VDB fill:#8B5CF6,color:#fff
+    style CTX7 fill:#8B5CF6,color:#fff
 ```
 
 ---
@@ -252,7 +259,7 @@ flowchart TB
 
 | 영역 | 선정 기술 | 버전 | 선정 근거 |
 |------|-----------|------|-----------|
-| Framework | Next.js (App Router) | 14+ | SSR/SSG 지원, SEO 유리, API Routes로 BFF 구현 가능, Vercel 무료 배포 |
+| Framework | Next.js (App Router) | 15+ | SSR/SSG 지원, SEO 유리, API Routes로 BFF 구현 가능, Vercel 무료 배포 |
 | 스타일링 | Tailwind CSS | 3.x | 유틸리티 기반으로 빠른 UI 개발, 다크 테마 구현 용이 |
 | 상태 관리 | Zustand | 4.x | 경량, 보일러플레이트 최소, React 친화적 |
 | HTTP 클라이언트 | fetch (내장) | - | Next.js의 확장된 fetch로 캐싱/재검증 기본 지원, 추가 의존성 불필요 |
@@ -383,6 +390,7 @@ flowchart TB
     subgraph "외부 API"
         LLM_EXT["LLM API<br/>(OpenAI / Anthropic)"]
         GITHUB_EXT["GitHub OAuth"]
+        CTX7_DEPLOY["Context7 API<br/>(Upstash)"]
     end
 
     subgraph "관측성"
@@ -398,6 +406,7 @@ flowchart TB
     HONO_API -->|"SQL (TLS)"| PG_DB
     HONO_API -->|"벡터 검색 (HTTPS)"| VDB
     HONO_API -->|"LLM 호출 (HTTPS)"| LLM_EXT
+    HONO_API -->|"문서 수집 (HTTPS)"| CTX7_DEPLOY
     NEXT_EDGE -->|"에러 리포트"| SENTRY
     HONO_API -->|"에러 리포트"| SENTRY
     NEXT_EDGE -->|"이벤트"| POSTHOG
@@ -515,11 +524,14 @@ api-intel/
 │       │   │   ├── history/    # 이력 관리 모듈
 │       │   │   ├── auth/       # 인증 모듈
 │       │   │   ├── indexing/   # 문서 인덱싱 모듈
+│       │   │   │   ├── context7/  # Context7 API 수집 (주력 채널)
+│       │   │   │   └── crawler/   # 직접 크롤링 수집 (보조 채널)
 │       │   │   └── analytics/  # 분석 이벤트 모듈
 │       │   ├── shared/         # 공통 유틸, 타입, 에러 처리
 │       │   └── infra/          # 외부 서비스 어댑터
 │       │       ├── llm/        # LLM API 클라이언트
 │       │       ├── vector-db/  # 벡터 DB 클라이언트
+│       │       ├── context7/   # Context7 API 클라이언트
 │       │       └── db/         # Prisma 설정
 │       └── prisma/
 │           └── schema.prisma   # DB 스키마
@@ -939,6 +951,20 @@ flowchart LR
 | 임베딩 모델 | OpenAI text-embedding-3-small (비용 효율) |
 | 배치 인덱싱 | Cron Job 기반 (주 1회 정기, 관리자 수동 트리거 가능) |
 
+#### Context7 API 통합 (문서 수집 주력 채널)
+
+| 항목 | 내용 |
+|------|------|
+| 서비스 | Upstash Context7 -- 라이브러리/API 공식 문서 수집·정제 서비스 |
+| 통합 방식 | REST API (resolve-library-id, query-docs 엔드포인트) |
+| 수집 전략 | **Context7 주력 + 직접 크롤링 보조**. Context7에서 커버하는 글로벌 주요 API(OpenAI, Stripe, Auth0, Pinecone 등)는 Context7로 수집하고, 한국 API 등 미지원 대상은 직접 크롤링으로 보완 |
+| 무료 티어 제한 | 월 1,000건 요청, 시간당 60건 |
+| 재시도 정책 | 최대 2회, 지수 백오프 (1초, 2초) |
+| 타임아웃 | 15초 |
+| 폴백 | Context7 API 실패 또는 미지원 라이브러리 시 직접 크롤링으로 자동 전환 |
+| Rate Limit 대응 | 시간당/월간 요청 카운터 관리, 한도 도달 시 크롤링으로 전환 |
+| 비용 | 무료 (1,000건/월) |
+
 ### 7.3 이벤트 기반 패턴
 
 > MVP 단계에서는 메시지 큐나 이벤트 버스를 사용하지 않는다. 비동기 처리가 필요한 작업(문서 인덱싱)은 배경 작업(Background Job)으로 처리한다.
@@ -947,7 +973,7 @@ flowchart LR
 |------|------|
 | 메시지 큐 | MVP 단계에서는 미적용 |
 | 이벤트 버스 | MVP 단계에서는 미적용 |
-| 비동기 처리 방식 | 문서 인덱싱: 관리자 API 호출 → 서버 사이드 배경 작업으로 실행 |
+| 비동기 처리 방식 | 문서 인덱싱: 관리자 API 호출 → Context7 API로 문서 수집(주력) + 직접 크롤링(보조) → 서버 사이드 배경 작업으로 임베딩·인덱싱 실행 |
 | 향후 계획 | 인덱싱 작업 규모 증가 시 BullMQ (Redis 기반) 또는 Inngest 도입 검토 |
 
 #### 핵심 데이터 흐름
@@ -1003,6 +1029,7 @@ sequenceDiagram
 | CI/CD | GitHub Actions |
 | 모니터링 | Sentry, Vercel Analytics, PostHog |
 | LLM | OpenAI GPT-4o-mini / Anthropic Claude Haiku (어댑터 패턴으로 교체 가능) |
+| 문서 수집 | Context7 API (Upstash) -- 주력 채널, 직접 크롤링 -- 보조 채널 |
 
 ### C. 요구사항 매핑
 

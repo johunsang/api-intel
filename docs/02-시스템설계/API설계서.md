@@ -292,8 +292,8 @@ data: {}
 | GET | `/api/v1/admin/users` | 사용자 목록 조회 | Bearer (ADMIN) | - | 200 |
 | PATCH | `/api/v1/admin/users/{userId}/status` | 사용자 상태 변경 | Bearer (ADMIN) | status | 200 |
 | PATCH | `/api/v1/admin/users/{userId}/role` | 사용자 역할 변경 | Bearer (ADMIN) | role | 200 |
-| GET | `/api/v1/admin/indexing/status` | 인덱싱 상태 조회 | Bearer (ADMIN) | - | 200 |
-| POST | `/api/v1/admin/indexing/trigger` | 수동 인덱싱 트리거 | Bearer (ADMIN) | category | 200 |
+| GET | `/api/v1/admin/indexing/status` | 인덱싱 상태 조회 (수집 채널별 현황 포함) | Bearer (ADMIN) | - | 200 |
+| POST | `/api/v1/admin/indexing/trigger` | 수동 인덱싱 트리거 (Context7 우선, 폴백 크롤링) | Bearer (ADMIN) | category, collectionMethod | 200 |
 
 ---
 
@@ -794,6 +794,75 @@ data: {"queryId":"q-550e8400-e29b-41d4-a716-446655440000"}
 | BR-004-03 | 비교 기능은 로그인 사용자(FREE 이상)만 사용할 수 있다 |
 | BR-004-04 | 비교표 생성은 쿼리 횟수를 차감하지 않는다 |
 | BR-004-05 | 비교 결과는 연관 쿼리 이력에 자동 연결되어 저장된다 |
+
+---
+
+### 5.5 GET /api/v1/admin/indexing/status - 인덱싱 상태 조회
+
+| 항목 | 내용 |
+|------|------|
+| **URL** | `/api/v1/admin/indexing/status` |
+| **Method** | GET |
+| **인증** | Bearer Token (ADMIN 전용) |
+| **설명** | 현재 인덱싱 작업 상태와 수집 채널별(Context7 / 직접 크롤링) 현황을 조회한다. |
+
+#### Response Body - 성공 (200 OK)
+
+```json
+{
+  "data": {
+    "lastRunAt": "2026-02-23T03:00:00Z",
+    "status": "completed",
+    "channels": {
+      "context7": {
+        "documentsCollected": 42,
+        "quota": { "monthly": 1000, "used": 156, "remaining": 844 },
+        "lastSuccessAt": "2026-02-23T03:00:00Z"
+      },
+      "crawling": {
+        "documentsCollected": 8,
+        "lastSuccessAt": "2026-02-23T03:05:00Z"
+      }
+    },
+    "totalProviders": 20,
+    "totalDocuments": 50,
+    "totalChunks": 1250
+  }
+}
+```
+
+---
+
+### 5.6 POST /api/v1/admin/indexing/trigger - 수동 인덱싱 트리거
+
+| 항목 | 내용 |
+|------|------|
+| **URL** | `/api/v1/admin/indexing/trigger` |
+| **Method** | POST |
+| **인증** | Bearer Token (ADMIN 전용) |
+| **설명** | 특정 카테고리에 대해 수동으로 문서 인덱싱을 트리거한다. 기본 수집 전략은 Context7 API 우선이며, Context7에서 미지원하는 API는 직접 크롤링으로 자동 폴백한다. `collectionMethod` 파라미터로 수집 방식을 강제 지정할 수 있다. |
+
+#### Request Body
+
+```json
+{
+  "category": "messaging",
+  "collectionMethod": "auto"
+}
+```
+
+| 필드 | 타입 | 필수 | 검증 규칙 | 설명 |
+|------|------|------|-----------|------|
+| `category` | string | 선택 | 허용된 카테고리 값 | 인덱싱 대상 카테고리 (미지정 시 전체) |
+| `collectionMethod` | string | 선택 | `auto`, `context7`, `crawling` | 수집 방식. `auto`(기본): Context7 우선 + 폴백 크롤링, `context7`: Context7만 사용, `crawling`: 직접 크롤링만 사용 |
+
+#### 비즈니스 규칙
+
+| 규칙 ID | 내용 |
+|---------|------|
+| BR-IDX-01 | 기본 수집 전략은 `auto`이며, Context7 API를 주력으로 사용하고 미지원 대상은 직접 크롤링으로 보완한다 |
+| BR-IDX-02 | Context7 무료 티어 한도(월 1,000건, 시간당 60건) 도달 시 자동으로 직접 크롤링으로 전환한다 |
+| BR-IDX-03 | Context7 API 장애 시 직접 크롤링으로 자동 폴백한다 |
 
 ---
 

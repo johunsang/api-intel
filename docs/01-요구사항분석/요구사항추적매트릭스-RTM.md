@@ -10,7 +10,7 @@
 |------|------|
 | 프로젝트명 | API Intelligence Engine |
 | 문서 번호 | RTM-001 |
-| 버전 | 0.1 |
+| 버전 | 1.0 |
 | 작성일 | 2026-02-23 |
 | 작성자 | 조훈상 / 기획·개발 |
 
@@ -25,6 +25,8 @@
 | 버전 | 날짜 | 변경 내용 | 작성자 |
 |------|------|-----------|--------|
 | 0.1 | 2026-02-23 | 초안 작성 — 서비스기획안 MVP 스코프 기반 FR 12건, NFR 7건 등록 | 조훈상 |
+| 0.2 | 2026-02-23 | FR-004 수집 전략 변경 — Context7 API 주력 + 직접 크롤링 보조 반영 | 조훈상 |
+| 1.0 | 2026-02-25 | 상세설계 완료 — FR-001~FR-012 설계 상태 '완료', NFR-001~NFR-007 설계 상태 '완료'. 모듈상세설계서(DD-001~DD-012), 비기능상세설계서(DD-PERF/SEC/INFRA/UI/DEV) 매핑 반영. 커버리지 요약 갱신 | 조훈상 |
 
 ---
 
@@ -92,32 +94,32 @@
 
 | 요구사항 ID | 요구사항명 | 우선순위 | 유스케이스 | 설계 문서 참조 | 구현 참조 (모듈/클래스) | 테스트케이스 ID | 요구사항 상태 | 설계 상태 | 구현 상태 | 테스트 상태 | 비고 |
 |------------|-----------|----------|-----------|---------------|----------------------|---------------|-------------|-----------|-----------|-----------|------|
-| FR-001 | 자연어 쿼리 입력 | P1 | UC-003 | DD-001 | query/QueryInputService, query/QueryController | TC-001-01 ~ TC-001-05 | 승인 | 미착수 | 미착수 | 미착수 | 핵심 진입점. 텍스트 입력 인터페이스 |
-| FR-002 | 자연어 조건 추출 | P1 | UC-003 | DD-002 | query/ConditionExtractor, query/LlmParserService | TC-002-01 ~ TC-002-08 | 승인 | 미착수 | 미착수 | 미착수 | LLM 기반 카테고리·기술 조건 파싱 |
-| FR-003 | RAG 검색 파이프라인 | P1 | UC-003 | DD-003 | rag/RetrievalService, rag/VectorSearchService, rag/GenerationService | TC-003-01 ~ TC-003-10 | 승인 | 미착수 | 미착수 | 미착수 | 핵심 엔진. 벡터 유사도 기반 검색 |
-| FR-004 | 공식 문서 인덱싱 — 5개 카테고리 | P1 | UC-003, UC-007 | DD-004 | indexing/CrawlerService, indexing/ChunkSplitter, indexing/EmbeddingService | TC-004-01 ~ TC-004-08 | 승인 | 미착수 | 미착수 | 미착수 | LLM API, 결제 API, 인증 API, 메시징 API, 벡터 DB |
-| FR-005 | 근거 인용 결과 표시 | P1 | UC-003 | DD-005 | result/CitationService, result/ResultRenderer | TC-005-01 ~ TC-005-06 | 승인 | 미착수 | 미착수 | 미착수 | 공식 문서 원문 인용 + 소스 링크 포함 |
-| FR-006 | 공식 링크 자동 정리 | P1 | UC-003 | DD-006 | result/LinkAggregator, result/LinkValidator | TC-006-01 ~ TC-006-05 | 승인 | 미착수 | 미착수 | 미착수 | 문서/가격/SDK/상태 페이지 유형별 정리 |
-| FR-007 | 사용자 인증 — GitHub OAuth 전용 | P1 | UC-001, UC-002, UC-006 | DD-007 | auth/AuthService, auth/GithubOAuthProvider | TC-007-01 ~ TC-007-10, TC-SEC-001 | 승인 | 미착수 | 미착수 | 미착수 | NextAuth.js(Auth.js) 기반 GitHub OAuth 전용 인증 |
-| FR-008 | 쿼리 이력 저장 | P1 | UC-005 | DD-008 | history/QueryHistoryService, history/HistoryController | TC-008-01 ~ TC-008-05 | 승인 | 미착수 | 미착수 | 미착수 | 로그인 사용자 대상 이전 쿼리/결과 저장·조회 |
-| FR-009 | 조건 기반 비교표 | P1 | UC-004 | DD-009 | comparison/ComparisonService, comparison/TableRenderer | TC-009-01 ~ TC-009-07 | 승인 | 미착수 | 미착수 | 미착수 | 2~3개 API 조건별(가격, SDK, 리전, 인증) 비교 |
-| FR-010 | 기본 분석 이벤트 수집 | P1 | - | DD-010 | analytics/EventTracker, analytics/AnalyticsService | TC-010-01 ~ TC-010-04 | 승인 | 미착수 | 미착수 | 미착수 | 쿼리 실행, 링크 클릭, 세션 트래킹 |
-| FR-011 | 랜딩 페이지 | P2 | - | DD-011 | landing/LandingPage, landing/ExampleQuerySection | TC-011-01 ~ TC-011-03 | 초안 | 미착수 | 미착수 | 미착수 | 가치 제안, 예시 쿼리, 가입 CTA 포함 |
-| FR-012 | 쿼리 제한 로직 | P2 | - | DD-012 | quota/QuotaService, quota/RateLimiter | TC-012-01 ~ TC-012-05 | 초안 | 미착수 | 미착수 | 미착수 | 비회원 3회, 무료 회원 월 20회 제한 |
+| FR-001 | 자연어 쿼리 입력 | P1 | UC-003 | [DD-001](../03-상세설계/모듈상세설계서.md#2-dd-001-자연어-쿼리-입력) | query/QueryController, query/QueryInputValidator | TC-001-01 ~ TC-001-05 | 승인 | 완료 | 미착수 | 미착수 | 핵심 진입점. 텍스트 입력 인터페이스 |
+| FR-002 | 자연어 조건 추출 | P1 | UC-003 | [DD-002](../03-상세설계/모듈상세설계서.md#3-dd-002-자연어-조건-추출) | query/ConditionExtractor, query/LlmParserService | TC-002-01 ~ TC-002-08 | 승인 | 완료 | 미착수 | 미착수 | LLM 기반 카테고리·기술 조건 파싱 |
+| FR-003 | RAG 검색 파이프라인 | P1 | UC-003 | [DD-003](../03-상세설계/모듈상세설계서.md#4-dd-003-rag-검색-파이프라인) | rag/RagPipeline, rag/VectorSearchService, rag/EmbeddingService | TC-003-01 ~ TC-003-10 | 승인 | 완료 | 미착수 | 미착수 | 핵심 엔진. 벡터 유사도 기반 검색 |
+| FR-004 | 공식 문서 인덱싱 — 5개 카테고리 | P1 | UC-003, UC-007 | [DD-004](../03-상세설계/모듈상세설계서.md#5-dd-004-공식-문서-인덱싱) | indexing/Context7Client, indexing/CrawlerService, indexing/ChunkSplitter, indexing/EmbeddingService | TC-004-01 ~ TC-004-08 | 승인 | 완료 | 미착수 | 미착수 | Context7 API 주력 + 직접 크롤링 보조. LLM API, 결제 API, 인증 API, 메시징 API, 벡터 DB |
+| FR-005 | 근거 인용 결과 표시 | P1 | UC-003 | [DD-005](../03-상세설계/모듈상세설계서.md#6-dd-005-근거-인용-결과-표시) | result/CitationService, result/ResultRenderer | TC-005-01 ~ TC-005-06 | 승인 | 완료 | 미착수 | 미착수 | 공식 문서 원문 인용 + 소스 링크 포함 |
+| FR-006 | 공식 링크 자동 정리 | P1 | UC-003 | [DD-006](../03-상세설계/모듈상세설계서.md#7-dd-006-공식-링크-자동-정리) | result/LinkAggregator, result/LinkValidator | TC-006-01 ~ TC-006-05 | 승인 | 완료 | 미착수 | 미착수 | 문서/가격/SDK/상태 페이지 유형별 정리 |
+| FR-007 | 사용자 인증 — GitHub OAuth 전용 | P1 | UC-001, UC-002, UC-006 | [DD-007](../03-상세설계/모듈상세설계서.md#8-dd-007-사용자-인증) | auth/AuthService, auth/GithubOAuthProvider, auth/AuthMiddleware | TC-007-01 ~ TC-007-10, TC-SEC-001 | 승인 | 완료 | 미착수 | 미착수 | NextAuth.js(Auth.js) 기반 GitHub OAuth 전용 인증 |
+| FR-008 | 쿼리 이력 저장 | P1 | UC-005 | [DD-008](../03-상세설계/모듈상세설계서.md#9-dd-008-쿼리-이력-저장) | history/QueryHistoryService, history/HistoryController | TC-008-01 ~ TC-008-05 | 승인 | 완료 | 미착수 | 미착수 | 로그인 사용자 대상 이전 쿼리/결과 저장·조회 |
+| FR-009 | 조건 기반 비교표 | P1 | UC-004 | [DD-009](../03-상세설계/모듈상세설계서.md#10-dd-009-조건-기반-비교표) | comparison/ComparisonService, comparison/TableRenderer | TC-009-01 ~ TC-009-07 | 승인 | 완료 | 미착수 | 미착수 | 2~5개 API 조건별(가격, SDK, 리전, 인증) 비교 |
+| FR-010 | 기본 분석 이벤트 수집 | P1 | - | [DD-010](../03-상세설계/모듈상세설계서.md#11-dd-010-기본-분석-이벤트-수집) | analytics/EventTracker, analytics/AnalyticsService | TC-010-01 ~ TC-010-04 | 승인 | 완료 | 미착수 | 미착수 | PostHog 기반 쿼리 실행, 링크 클릭, 세션 트래킹 |
+| FR-011 | 랜딩 페이지 | P2 | - | [DD-011](../03-상세설계/모듈상세설계서.md#12-dd-011-랜딩-페이지) | landing/LandingPage, landing/ExampleQuerySection | TC-011-01 ~ TC-011-03 | 승인 | 완료 | 미착수 | 미착수 | SSG 렌더링. 가치 제안, 예시 쿼리 3개, 가입 CTA 포함 |
+| FR-012 | 쿼리 제한 로직 | P2 | - | [DD-012](../03-상세설계/모듈상세설계서.md#13-dd-012-쿼리-제한-로직) | quota/QuotaService, quota/RateLimiter | TC-012-01 ~ TC-012-05 | 승인 | 완료 | 미착수 | 미착수 | 비회원 3회, 무료 회원 월 20회, Pro 무제한 |
 
 ---
 
 ## 5. 비기능 요구사항 추적 매트릭스
 
-| 요구사항 ID | 요구사항명 | 분류 | 우선순위 | 설계 문서 참조 | 구현 참조 (모듈/설정) | 테스트케이스 ID | 요구사항 상태 | 구현 상태 | 테스트 상태 | 비고 |
-|------------|-----------|------|----------|---------------|---------------------|---------------|-------------|-----------|-----------|------|
-| NFR-001 | API 응답시간 | 성능 | P1 | DD-PERF-001 | infra/CacheConfig, rag/ResponseOptimizer | TC-PERF-001 ~ TC-PERF-003 | 승인 | 미착수 | 미착수 | RAG 파이프라인 포함 3초 이내 목표 |
-| NFR-002 | 동시 사용자 | 성능 | P1 | DD-PERF-001 | infra/ServerlessConfig, infra/ConnectionPool | TC-PERF-004 ~ TC-PERF-005 | 승인 | 미착수 | 미착수 | MVP 기준 동시 50명 처리 목표 |
-| NFR-003 | 인증/인가 | 보안 | P1 | DD-SEC-001 | auth/JwtService, auth/SessionGuard | TC-SEC-001 ~ TC-SEC-008 | 승인 | 미착수 | 미착수 | JWT 기반 세션 관리 + OAuth 보안 |
-| NFR-004 | 데이터 암호화 | 보안 | P1 | DD-SEC-002 | infra/TlsConfig, crypto/EncryptionService | TC-SEC-009 ~ TC-SEC-012 | 승인 | 미착수 | 미착수 | TLS 1.3 전송 암호화 + DB 암호화 |
-| NFR-005 | 업타임 목표 | 가용성 | P1 | DD-INFRA-001 | infra/HealthCheck, infra/MonitoringConfig | TC-HA-001 ~ TC-HA-003 | 승인 | 미착수 | 미착수 | 99.9% 업타임 목표 |
-| NFR-006 | 브라우저 호환 | 호환성 | P1 | DD-UI-001 | frontend/BrowserPolyfills, frontend/ResponsiveLayout | TC-COMPAT-001 ~ TC-COMPAT-006 | 승인 | 미착수 | 미착수 | Chrome, Firefox, Safari, Edge 최신 2개 버전 |
-| NFR-007 | 코드 품질 | 유지보수성 | P2 | DD-DEV-001 | ci/LintConfig, ci/QualityGate, ci/TestCoverage | TC-QUAL-001 ~ TC-QUAL-003 | 초안 | 미착수 | 미착수 | ESLint + Prettier + 테스트 커버리지 80% 목표 |
+| 요구사항 ID | 요구사항명 | 분류 | 우선순위 | 설계 문서 참조 | 구현 참조 (모듈/설정) | 테스트케이스 ID | 요구사항 상태 | 설계 상태 | 구현 상태 | 테스트 상태 | 비고 |
+|------------|-----------|------|----------|---------------|---------------------|---------------|-------------|-----------|-----------|-----------|------|
+| NFR-001 | API 응답시간 | 성능 | P1 | [DD-PERF-001](../03-상세설계/비기능상세설계서.md#2-dd-perf-001-성능-설계) | infra/CacheConfig, rag/ResponseOptimizer | TC-PERF-001 ~ TC-PERF-003 | 승인 | 완료 | 미착수 | 미착수 | RAG 파이프라인 포함 P95 3초 이내 목표. 3계층 캐싱 전략 |
+| NFR-002 | 동시 사용자 | 성능 | P1 | [DD-PERF-001](../03-상세설계/비기능상세설계서.md#2-dd-perf-001-성능-설계) | infra/ServerlessConfig, infra/ConnectionPool | TC-PERF-004 ~ TC-PERF-005 | 승인 | 완료 | 미착수 | 미착수 | MVP 기준 동시 50명 처리 목표. k6 부하 테스트 계획 |
+| NFR-003 | 인증/인가 | 보안 | P1 | [DD-SEC-001](../03-상세설계/비기능상세설계서.md#3-dd-sec-001-인증인가-보안-설계) | auth/JwtService, auth/AuthMiddleware | TC-SEC-001 ~ TC-SEC-008 | 승인 | 완료 | 미착수 | 미착수 | JWT RS256 + RBAC + 보안 헤더 + 감사 로깅 |
+| NFR-004 | 데이터 암호화 | 보안 | P1 | [DD-SEC-002](../03-상세설계/비기능상세설계서.md#4-dd-sec-002-데이터-암호화-설계) | infra/TlsConfig | TC-SEC-009 ~ TC-SEC-012 | 승인 | 완료 | 미착수 | 미착수 | TLS 1.3 전송 + 관리형 서비스 At-Rest 암호화 |
+| NFR-005 | 업타임 목표 | 가용성 | P1 | [DD-INFRA-001](../03-상세설계/비기능상세설계서.md#5-dd-infra-001-인프라가용성-설계) | infra/HealthCheck, infra/MonitoringConfig | TC-HA-001 ~ TC-HA-003 | 승인 | 완료 | 미착수 | 미착수 | 99.9% 업타임. Sentry + PostHog + Pino 모니터링 |
+| NFR-006 | 브라우저 호환 | 호환성 | P1 | [DD-UI-001](../03-상세설계/비기능상세설계서.md#6-dd-ui-001-ui호환성-설계) | frontend/ResponsiveLayout | TC-COMPAT-001 ~ TC-COMPAT-006 | 승인 | 완료 | 미착수 | 미착수 | Tailwind + shadcn/ui. 다크 테마 기본 |
+| NFR-007 | 코드 품질 | 유지보수성 | P2 | [DD-DEV-001](../03-상세설계/비기능상세설계서.md#7-dd-dev-001-코드-품질개발-표준-설계) | ci/LintConfig, ci/QualityGate, ci/TestCoverage | TC-QUAL-001 ~ TC-QUAL-003 | 승인 | 완료 | 미착수 | 미착수 | ESLint strict + Prettier + Vitest 80% + GitHub Flow |
 
 ---
 
@@ -130,7 +132,7 @@
 | 총 기능 요구사항 수 | 12 | - | - |
 | 승인된 요구사항 | 10 | 83.3% | 100% |
 | 유스케이스 매핑 완료 | 10 | 83.3% | 100% |
-| 설계 매핑 완료 | 0 | 0% | 100% |
+| 설계 매핑 완료 | 12 | 100% | 100% |
 | 구현 완료 | 0 | 0% | 100% |
 | 테스트 매핑 완료 | 0 | 0% | 100% |
 | 테스트 실행 완료 | 0 | 0% | 100% |
@@ -141,7 +143,7 @@
 |------|------|------|------|
 | 총 비기능 요구사항 수 | 7 | - | - |
 | 승인된 요구사항 | 6 | 85.7% | 100% |
-| 설계 매핑 완료 | 0 | 0% | 100% |
+| 설계 매핑 완료 | 7 | 100% | 100% |
 | 구현 완료 | 0 | 0% | 100% |
 | 테스트 매핑 완료 | 0 | 0% | 100% |
 | 테스트 실행 완료 | 0 | 0% | 100% |
@@ -150,19 +152,19 @@
 
 | 우선순위 | 총 요구사항 | 설계 완료 | 구현 완료 | 테스트 완료 |
 |----------|-----------|-----------|-----------|-----------|
-| P1 | 16 | 0 (0%) | 0 (0%) | 0 (0%) |
-| P2 | 3 | 0 (0%) | 0 (0%) | 0 (0%) |
+| P1 | 16 | 16 (100%) | 0 (0%) | 0 (0%) |
+| P2 | 3 | 3 (100%) | 0 (0%) | 0 (0%) |
 
 ### 6.4 전체 진행률 차트
 
 ```
-설계 매핑률:  [>                             ] 0%
+설계 매핑률:  [██████████████████████████████] 100%
 구현 매핑률:  [>                             ] 0%
 테스트 매핑률: [>                             ] 0%
 테스트 통과률: [>                             ] 0%
 ```
 
-> 현재 분석 단계 초기로 모든 설계/구현/테스트 작업이 미착수 상태이다. SRS 작성 완료 후 설계 단계에 진입하면 매핑률이 갱신된다.
+> 설계 단계가 완료되어 모든 기능/비기능 요구사항의 설계 매핑이 100% 달성되었다. 구현 단계 진입 후 구현·테스트 매핑률이 갱신된다.
 
 ---
 
@@ -172,11 +174,9 @@
 
 | 요구사항 ID | 요구사항명 | 미매핑 단계 | 사유 | 담당자 | 목표 해결일 |
 |------------|-----------|-----------|------|--------|-----------|
-| FR-001 ~ FR-012 | 전체 기능 요구사항 | 설계 | 분석 단계 초기 — SRS 작성 완료 후 설계 착수 예정 | 조훈상 | 2026-03-23 |
-| FR-001 ~ FR-012 | 전체 기능 요구사항 | 구현 | 설계 완료 후 구현 착수 예정 | 조훈상 | 2026-04-20 |
+| FR-001 ~ FR-012 | 전체 기능 요구사항 | 구현 | 설계 완료 — 구현 착수 예정 | 조훈상 | 2026-04-20 |
 | FR-001 ~ FR-012 | 전체 기능 요구사항 | 테스트 | 구현 완료 후 테스트 착수 예정 | 조훈상 | 2026-05-04 |
-| NFR-001 ~ NFR-007 | 전체 비기능 요구사항 | 설계 | 분석 단계 초기 — SRS 작성 완료 후 설계 착수 예정 | 조훈상 | 2026-03-23 |
-| NFR-001 ~ NFR-007 | 전체 비기능 요구사항 | 구현 | 설계 완료 후 구현 착수 예정 | 조훈상 | 2026-04-20 |
+| NFR-001 ~ NFR-007 | 전체 비기능 요구사항 | 구현 | 설계 완료 — 구현 착수 예정 | 조훈상 | 2026-04-20 |
 | NFR-001 ~ NFR-007 | 전체 비기능 요구사항 | 테스트 | 구현 완료 후 테스트 착수 예정 | 조훈상 | 2026-05-04 |
 | FR-010 | 기본 분석 이벤트 수집 | 유스케이스 | 독립적인 인프라 기능으로 별도 유스케이스 불필요 | 조훈상 | N/A |
 | FR-011 | 랜딩 페이지 | 유스케이스 | 정적 페이지로 별도 유스케이스 불필요 | 조훈상 | N/A |

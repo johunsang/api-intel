@@ -1057,6 +1057,7 @@ graph TB
 | EXT-01 | GitHub OAuth | 사용자 인증 (로그인/회원가입) | OAuth 2.0 | Client ID/Secret | GitHub OAuth App |
 | EXT-02 | [placeholder: 파일 스토리지] | 파일 업로드/다운로드 | SDK/API | Access Key | [placeholder: e.g., AWS S3, GCS] |
 | EXT-03 | [placeholder: 모니터링] | 시스템 모니터링 | Agent/API | API Key | [placeholder: e.g., Datadog, Grafana] |
+| EXT-04 | Context7 API (Upstash) | API/라이브러리 공식 문서 수집 (주력 채널) | REST API | API Key | 무료 (1,000건/월). 글로벌 주요 API 커버, 한국 API 미지원 가능 — 미지원 프로바이더는 직접 크롤링으로 보완 |
 | [placeholder] | [placeholder] | [placeholder] | [placeholder] | [placeholder] | [placeholder] |
 
 ---
